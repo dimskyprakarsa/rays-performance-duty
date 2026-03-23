@@ -133,6 +133,7 @@
     </div>
 
     <script type="module">
+        // Import dari config.js di root folder sesuai gambar VS Code terbaru
         import firebaseConfig from "./config.js";
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -264,7 +265,6 @@
 
         window.logout = () => { localStorage.clear(); window.location.href = 'index.html'; };
 
-        // Helper UI Functions
         function renderCounters(allUsers) {
             const grades = ["Manager", "Supervisor", "Senior", "Junior", "Recruit"];
             const counts = { Manager: 0, Supervisor: 0, Senior: 0, Junior: 0, Recruit: 0 };
@@ -285,7 +285,7 @@
 
         function renderTable(reports) {
             const tbody = document.getElementById('reportTable');
-            if (reports.length === 0) {
+            if (!reports || reports.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" class="py-12 uppercase tracking-widest text-[9px] text-gray-500">Empty history</td></tr>`;
                 return;
             }
@@ -305,7 +305,7 @@
     </script>
 
     <script>
-        // Paste Image Logic
+        // Logika Paste Gambar
         window.tempImg = null;
         document.getElementById('drop-zone').addEventListener('paste', (e) => {
             const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf("image") !== -1);
