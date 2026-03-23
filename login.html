@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - RAYS PERFORMANCE</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md p-8 border-rays bg-black/40 shadow-2xl">
+        <div class="text-center mb-8">
+            <img src="assets/logo.png" alt="Logo" class="w-40 mx-auto mb-4">
+            <h2 class="text-xl font-black uppercase tracking-tighter">Employee Login</h2>
+        </div>
+        <div class="space-y-4">
+            <input type="email" id="email" placeholder="Email Address" class="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition text-white">
+            <input type="password" id="password" placeholder="Password" class="w-full bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition text-white">
+            <button onclick="window.login()" class="w-full bg-red-700 hover:bg-red-600 py-3 rounded-lg font-black text-[11px] uppercase tracking-widest transition active:scale-95 text-white">Sign In</button>
+            <p class="text-center text-[10px] text-gray-500 uppercase">Don't have an account? <a href="register.html" class="text-red-500 font-bold">Register</a></p>
+        </div>
+    </div>
+
+    <script type="module">
+        import firebaseConfig from "./config.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.login = async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            if(!email || !password) return alert("Please fill all fields");
+
+            const snapshot = await get(ref(db, 'users'));
+            const users = snapshot.val();
+            
+            let found = false;
+            for (let id in users) {
+                if (users[id].email === email && users[id].password === password) {
+                    localStorage.setItem('userKey', id);
+                    localStorage.setItem('currentUserEmail', email);
+                    window.location.href = 'dashboard.html';
+                    found = true;
+                    break;
+                }
+            }
+            if(!found) alert("Invalid Email or Password");
+        };
+    </script>
+</body>
+</html>

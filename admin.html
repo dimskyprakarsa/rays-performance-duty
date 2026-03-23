@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - RAYS PERFORMANCE</title>
+    
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="p-6">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-10 border-b border-gray-700 pb-5">
+            <img src="assets/logo.png" alt="RAYS" class="w-32 h-12 object-contain">
+            <nav class="flex gap-8 font-bold text-[11px] uppercase tracking-[0.2em] items-center">
+                <a href="dashboard.html" class="text-gray-400 hover:text-white transition">Dashboard</a>
+                <a href="admin.html" class="text-white border-b-2 border-red-600 pb-1">Admin Panel</a>
+            </nav>
+        </header>
+
+        <div class="grid grid-cols-12 gap-8">
+            <aside class="col-span-12 lg:col-span-3 space-y-5">
+                <div class="border-rays p-5 bg-black/40 shadow-lg text-center">
+                    <p class="text-[10px] font-bold uppercase mb-4 tracking-widest text-gray-500">Global Actions</p>
+                    <button onclick="window.resetWeeklyData()" class="w-full bg-red-900/20 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white transition py-3 rounded-lg font-black text-[10px] uppercase tracking-widest">
+                        Reset Weekly Data
+                    </button>
+                    <p class="text-[8px] text-gray-600 mt-3 italic">*Aksi ini akan menghapus semua jam kerja dan laporan minggu ini dari seluruh database.</p>
+                </div>
+            </aside>
+
+            <main class="col-span-12 lg:col-span-9 space-y-10">
+                <section>
+                    <h3 class="text-lg font-black uppercase mb-4 tracking-tighter text-white">Weekly Salary Recap</h3>
+                    <div class="border-rays overflow-hidden bg-black/20 shadow-2xl">
+                        <table class="w-full text-[10px] text-center">
+                            <thead class="bg-red-950/80 text-white font-black uppercase tracking-widest border-b border-gray-800">
+                                <tr>
+                                    <th class="py-4 px-2 border-r border-black/20">Employee Name</th>
+                                    <th class="py-4 px-2 border-r border-black/20">Total Duty</th>
+                                    <th class="py-4 px-2 border-r border-black/20">Overtime</th>
+                                    <th class="py-4 px-2 border-r border-black/20">Total Salary</th>
+                                    <th class="py-4 px-2">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminRecapTable" class="divide-y divide-gray-800"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-black uppercase mb-4 tracking-tighter text-gray-300">Employee Management</h3>
+                    <div class="border-rays overflow-hidden bg-black/20 shadow-xl">
+                        <table class="w-full text-[10px] text-left">
+                            <thead class="bg-gray-800/50 text-gray-400 font-bold uppercase tracking-widest">
+                                <tr>
+                                    <th class="py-3 px-5 border-r border-black/10">Full Name</th>
+                                    <th class="py-3 px-5 border-r border-black/10">Email Address</th>
+                                    <th class="py-3 px-5 border-r border-black/10 text-center">Grade Status</th>
+                                    <th class="py-3 px-5 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userManagementTable" class="divide-y divide-gray-800"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <div id="reportModal" class="opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50 transition-opacity duration-300">
+        <div class="modal-overlay absolute w-full h-full bg-black/90" onclick="window.toggleModal()"></div>
+        <div class="modal-container bg-[#0a0a0a] w-11/12 md:max-w-4xl mx-auto rounded-xl shadow-2xl z-50 overflow-y-auto border border-gray-800">
+            <div class="modal-content py-6 text-left px-8">
+                <div class="flex justify-between items-center pb-3 border-b border-gray-800">
+                    <p class="text-lg font-black uppercase tracking-tighter" id="modalTitle">Employee Report</p>
+                    <button onclick="window.toggleModal()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="mt-5 max-h-[60vh] overflow-y-auto">
+                    <table class="w-full text-[10px] text-center border-collapse">
+                        <thead class="text-gray-500 uppercase border-b border-gray-800 bg-black/40">
+                            <tr>
+                                <th class="py-3 border-r border-gray-800/50">Date</th>
+                                <th class="py-3 border-r border-gray-800/50">Service</th>
+                                <th class="py-3 border-r border-gray-800/50">Mod</th>
+                                <th class="py-3 border-r border-gray-800/50">Engine</th>
+                                <th class="py-3 border-r border-gray-800/50 text-white">Total</th>
+                                <th class="py-3 text-white">Proof</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modalTableBody" class="divide-y divide-gray-900"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import firebaseConfig from "./config.js";
+        import { Storage } from "./data/storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const grades = ["Manager", "Supervisor", "Senior", "Junior", "Recruit"];
+        let currentUsersData = {};
+
+        // Security Check menggunakan Storage Helper
+        const session = Storage.getSession();
+        if (!session.email) window.location.href = 'index.html';
+
+        // Fungsi Global untuk Update Grade
+        window.updateGrade = function(userId, newGrade) {
+            update(ref(db, 'users/' + userId), { grade: newGrade });
+        };
+
+        // Fungsi Global untuk Hapus User
+        window.deleteUser = function(userId) {
+            if (confirm("Hapus karyawan ini secara permanen dari database?")) {
+                remove(ref(db, 'users/' + userId));
+            }
+        };
+
+        // Fungsi Global Reset Data Mingguan (Clear History)
+        window.resetWeeklyData = async function() {
+            if (confirm("WARNING: Hapus semua history laporan dan reset jam kerja seluruh karyawan?")) {
+                const snapshot = await get(ref(db, 'users'));
+                const users = snapshot.val();
+                if (users) {
+                    const updates = {};
+                    for (let id in users) {
+                        updates[`users/${id}/weeklySalary`] = 0;
+                        updates[`users/${id}/totalHours`] = 0;
+                        updates[`users/${id}/totalOvertime`] = 0;
+                        updates[`users/${id}/reports`] = null; 
+                    }
+                    update(ref(db), updates).then(() => alert("Seluruh data mingguan telah dibersihkan."));
+                }
+            }
+        };
+
+        window.toggleModal = function() {
+            const modal = document.getElementById('reportModal');
+            modal.classList.toggle('opacity-0');
+            modal.classList.toggle('pointer-events-none');
+        };
+
+        window.viewReport = function(userId) {
+            const user = currentUsersData[userId];
+            const reports = user.reports ? Object.values(user.reports) : [];
+            document.getElementById('modalTitle').innerText = `${user.name} - SERVICE HISTORY`;
+            const tbody = document.getElementById('modalTableBody');
+            
+            tbody.innerHTML = reports.length === 0 ? 
+                `<tr><td colspan="6" class="py-10 text-gray-700 italic uppercase text-[9px]">No reports found.</td></tr>` : 
+                reports.map(r => `
+                    <tr class="h-12 border-b border-gray-900/50 hover:bg-white/5 transition text-gray-400">
+                        <td class="py-2 border-r border-gray-800/30 font-mono">${r.date}</td>
+                        <td class="py-2 border-r border-gray-800/30">${r.service}</td>
+                        <td class="py-2 border-r border-gray-800/30">${r.mod}</td>
+                        <td class="py-2 border-r border-gray-800/30">${r.engine}</td>
+                        <td class="py-2 border-r border-gray-800/30 font-bold text-white">${Storage.formatMoney(r.total)}</td>
+                        <td class="py-2">
+                            ${r.image ? `<img src="${r.image}" onclick="window.open('${r.image}')" class="h-8 mx-auto cursor-pointer rounded border border-red-600/50 hover:scale-110 transition">` : `<span class="text-gray-700 italic text-[8px]">No Proof</span>`}
+                        </td>
+                    </tr>
+                `).reverse().join('');
+            
+            window.toggleModal();
+        };
+
+        // Live Database Listener
+        onValue(ref(db, 'users'), (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                currentUsersData = data;
+                renderTables(data);
+            }
+        });
+
+        function renderTables(users) {
+            const recapTable = document.getElementById('adminRecapTable');
+            const managementTable = document.getElementById('userManagementTable');
+            
+            // Render Tabel Gaji (Weekly Salary Recap)
+            recapTable.innerHTML = Object.keys(users).map(id => {
+                const user = users[id];
+                return `
+                    <tr class="h-14 hover:bg-white/5 transition text-gray-400">
+                        <td class="px-2 border-r border-gray-800/30 font-bold text-white uppercase">${user.name}</td>
+                        <td class="px-2 border-r border-gray-800/30 font-black">${(user.totalHours || 0).toFixed(1)} H</td>
+                        <td class="px-2 border-r border-gray-800/30 font-black text-red-500">${(user.totalOvertime || 0).toFixed(1)} H</td>
+                        <td class="px-2 border-r border-gray-800/30 font-black text-white italic text-sm tracking-tighter">
+                            ${Storage.formatMoney(user.weeklySalary || 0)}
+                        </td>
+                        <td class="px-2">
+                            <button onclick="window.viewReport('${id}')" class="bg-gray-800/50 hover:bg-red-700 text-white px-4 py-1.5 rounded text-[9px] uppercase font-black transition border border-gray-700">View Report</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Render Tabel Management
+            managementTable.innerHTML = Object.keys(users).map(id => {
+                const user = users[id];
+                let optionsHtml = grades.map(g => `<option value="${g}" ${user.grade === g ? 'selected' : ''}>${g}</option>`).join('');
+                
+                // Proteksi Akun Admin Utama
+                const isMasterAdmin = user.role === "admin";
+
+                return `
+                    <tr class="hover:bg-white/5 transition border-b border-gray-900/50">
+                        <td class="py-4 px-5 border-r border-black/10 font-bold uppercase text-white">${user.name}</td>
+                        <td class="py-4 px-5 border-r border-black/10 font-mono text-gray-400">${user.email}</td>
+                        <td class="py-4 px-5 border-r border-black/10 text-center">
+                            <select class="bg-black border border-gray-700 text-white text-[10px] rounded px-2 py-1 outline-none focus:border-red-600" onchange="window.updateGrade('${id}', this.value)">
+                                ${optionsHtml}
+                            </select>
+                        </td>
+                        <td class="py-4 px-5 text-right">
+                            ${isMasterAdmin ? 
+                                `<span class="text-gray-600 text-[9px] uppercase font-black px-3">Master Admin</span>` : 
+                                `<button onclick="window.deleteUser('${id}')" class="text-red-600 hover:text-red-400 text-[10px] uppercase font-bold px-2 py-1 border border-red-900/30 rounded bg-red-900/10 transition">Delete</button>`
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
