@@ -5,189 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - RAYS PERFORMANCE</title>
     
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background: radial-gradient(circle at center, #1a0505 0%, #0a0a0a 100%); color: white; min-height: 100vh; }
-        .border-rays { border: 1px solid #4b5563; border-radius: 12px; }
-        input { font-style: italic; background: rgba(0,0,0,0.4) !important; color: white; }
-        .img-preview-style { max-height: 35px; border-radius: 4px; border: 1px solid #dc2626; }
-        .timer-glow { text-shadow: 0 0 10px rgba(220, 38, 38, 0.5); }
-    </style>
-
-    <script type="module">
-        import firebaseConfig from "./config.js";
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        const userKey = localStorage.getItem('userKey');
-        const currentUserEmail = localStorage.getItem('currentUserEmail');
-
-        if (!userKey || !currentUserEmail) {
-            window.location.href = 'index.html';
-        }
-
-        const SALARY_CONFIG = {
-            "Manager": { base: 15000, otRate: 1500 },
-            "Supervisor": { base: 13000, otRate: 1250 },
-            "Senior": { base: 10000, otRate: 1000 },
-            "Junior": { base: 7500, otRate: 750 },
-            "Recruit": { base: 5000, otRate: 500 }
-        };
-        const BASIC_DUTY_HOURS = 15;
-
-        onValue(ref(db, `users/${userKey}`), (snapshot) => {
-            const user = snapshot.val();
-            if (!user) return;
-            get(ref(db, 'users')).then((allUsersSnapshot) => {
-                const allUsers = allUsersSnapshot.val() || {};
-                updateUI(user, allUsers);
-            });
-        });
-
-        function updateUI(user, allUsers) {
-            const salaryData = calculateSalaries(user);
-            document.getElementById('userName').innerText = user.name;
-            document.getElementById('userGrade').innerText = user.grade;
-            document.getElementById('mainName').innerText = user.name;
-            document.getElementById('mainGrade').innerText = user.grade;
-            document.getElementById('totalSalary').innerText = "$ " + Math.floor(salaryData.total).toLocaleString();
-            document.getElementById('dutyHours').innerText = `${(user.totalHours || 0).toFixed(1)} H / ${BASIC_DUTY_HOURS} H`;
-            document.getElementById('overtime').innerText = `${salaryData.overtimeHours} H`;
-            document.getElementById('baseSalaryDisplay').innerText = "$ " + salaryData.baseSalary.toLocaleString();
-            document.getElementById('bonusDisplay').innerText = "$ " + Math.floor(salaryData.bonusOT).toLocaleString();
-
-            const btn = document.getElementById('btnClock');
-            btn.innerText = user.onDuty ? "Clock-Out" : "Clock-In";
-            btn.className = user.onDuty ? 
-                "w-full bg-green-900/40 border border-green-600/50 text-green-500 text-[9px] py-2.5 rounded font-black uppercase" : 
-                "w-full bg-red-900/40 border border-red-600/50 text-red-500 text-[9px] py-2.5 rounded font-black uppercase hover:bg-red-600 hover:text-white transition";
-
-            if (user.role === 'admin' && !document.getElementById('admin-link')) {
-                const nav = document.getElementById('nav-links');
-                nav.insertAdjacentHTML('afterbegin', `<a id="admin-link" href="admin.html" class="text-gray-400 hover:text-white transition uppercase">Admin Panel</a>`);
-            }
-
-            renderCounters(allUsers);
-            renderDutyList(allUsers);
-            renderTable(user.reports || []);
-            startLiveTimer(user);
-        }
-
-        function calculateSalaries(user) {
-            const config = SALARY_CONFIG[user.grade] || SALARY_CONFIG["Recruit"];
-            const totalHours = user.totalHours || 0;
-            let baseSalary = 0, overtimeHours = 0, bonusOT = 0;
-            if (totalHours >= BASIC_DUTY_HOURS) {
-                baseSalary = config.base;
-                overtimeHours = totalHours - BASIC_DUTY_HOURS;
-                bonusOT = overtimeHours * config.otRate;
-            }
-            return { baseSalary, overtimeHours: overtimeHours.toFixed(1), bonusOT, total: baseSalary + bonusOT };
-        }
-
-        let timerInterval = null;
-        function startLiveTimer(user) {
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                let displayHours = user.totalHours || 0;
-                if (user.onDuty && user.startTime) {
-                    const sessionMs = Date.now() - user.startTime;
-                    displayHours += (sessionMs / 3600000);
-                    document.getElementById('liveTimer').classList.add('text-red-500', 'timer-glow');
-                } else {
-                    document.getElementById('liveTimer').classList.remove('text-red-500', 'timer-glow');
-                }
-                document.getElementById('liveTimer').innerText = formatTime(displayHours);
-            }, 1000);
-        }
-
-        function formatTime(totalHoursDecimal) {
-            const totalSeconds = Math.floor(totalHoursDecimal * 3600);
-            const h = Math.floor(totalSeconds / 3600);
-            const m = Math.floor((totalSeconds % 3600) / 60);
-            const s = totalSeconds % 60;
-            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        }
-
-        window.toggleClock = async () => {
-            const snapshot = await get(ref(db, `users/${userKey}`));
-            const user = snapshot.val();
-            const now = Date.now();
-            if (!user.onDuty) {
-                await update(ref(db, `users/${userKey}`), { onDuty: true, startTime: now });
-            } else {
-                const sessionMs = now - user.startTime;
-                const newTotal = (user.totalHours || 0) + (sessionMs / 3600000);
-                await update(ref(db, `users/${userKey}`), { onDuty: false, totalHours: newTotal, startTime: null });
-            }
-        };
-
-        window.submitReport = async () => {
-            const svc = document.getElementById('in-service').value;
-            const total = document.getElementById('in-total').value;
-            if (!svc || !total || !window.tempImg) return alert("Lengkapi data dan bukti foto!");
-            const snapshot = await get(ref(db, `users/${userKey}/reports`));
-            const reports = snapshot.val() || [];
-            reports.push({
-                date: new Date().toLocaleDateString('id-ID'),
-                service: svc,
-                mod: document.getElementById('in-mod').value || 0,
-                engine: document.getElementById('in-engine').value || 0,
-                total: parseInt(total),
-                image: window.tempImg
-            });
-            await update(ref(db, `users/${userKey}`), { reports: reports });
-            alert("Report Berhasil!");
-            location.reload();
-        };
-
-        window.logout = () => { localStorage.clear(); window.location.href = 'index.html'; };
-
-        function renderCounters(allUsers) {
-            const grades = ["Manager", "Supervisor", "Senior", "Junior", "Recruit"];
-            const counts = { Manager: 0, Supervisor: 0, Senior: 0, Junior: 0, Recruit: 0 };
-            Object.values(allUsers).forEach(u => { if(counts[u.grade] !== undefined) counts[u.grade]++; });
-            document.getElementById('gradeCounter').innerHTML = grades.map(grade => `
-                <div class="border-rays px-5 py-3 flex justify-between items-center bg-black/20">
-                    <span class="text-gray-400">${grade}</span><span class="text-red-600 text-lg font-black italic">${counts[grade]}</span>
-                </div>
-            `).join('');
-        }
-
-        function renderDutyList(allUsers) {
-            const onDutyUsers = Object.values(allUsers).filter(u => u.onDuty);
-            document.getElementById('dutyList').innerHTML = onDutyUsers.length === 0 ? 
-                `<li class="text-gray-700 italic text-center py-2 uppercase text-[9px]">No one on duty</li>` : 
-                onDutyUsers.map(u => `<li class="flex justify-between items-center bg-red-950/10 p-2 rounded"><span>${u.name}</span><span class="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black uppercase">${u.grade}</span></li>`).join('');
-        }
-
-        function renderTable(reports) {
-            const tbody = document.getElementById('reportTable');
-            if (!reports || reports.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="py-12 uppercase tracking-widest text-[9px] text-gray-500">Empty history</td></tr>`;
-                return;
-            }
-            tbody.innerHTML = reports.slice().reverse().map(r => `
-                <tr class="h-12 hover:bg-white/5 transition">
-                    <td class="border-r border-gray-800/30">${r.date}</td>
-                    <td class="border-r border-gray-800/30">${r.service}</td>
-                    <td class="border-r border-gray-800/30">${r.mod}</td>
-                    <td class="border-r border-gray-800/30">${r.engine}</td>
-                    <td class="border-r border-gray-800/30 font-black text-white">$ ${r.total.toLocaleString()}</td>
-                    <td class="px-2">
-                        ${r.image ? `<button onclick="window.openPreview('${r.image}')" class="text-red-500 hover:text-white transition uppercase font-bold text-[8px]"><i class="fas fa-camera"></i> View</button>` : `<span class="text-gray-700 italic">No Proof</span>`}
-                    </td>
-                </tr>
-            `).join('');
-        }
-    </script>
 </head>
 <body class="p-6">
+
     <div class="max-w-6xl mx-auto">
         <header class="flex justify-between items-center mb-10 border-b border-gray-700 pb-5">
             <img src="assets/logo.png" alt="RAYS PERFORMANCE" class="w-32 h-12 object-contain">
@@ -210,17 +33,20 @@
                                 <p id="userGrade" class="text-[9px] text-red-600 font-bold uppercase tracking-widest">GRADE</p>
                             </div>
                         </div>
+                        
                         <div class="space-y-3 text-center">
                             <div id="liveTimerCont" class="py-2 bg-black/20 rounded-lg border border-gray-800/50">
                                 <p class="text-[8px] text-gray-500 uppercase font-bold tracking-[0.2em] mb-1">Current Duty Duration</p>
                                 <p id="liveTimer" class="text-lg font-black text-white italic tracking-tighter">00:00:00</p>
                             </div>
                             <button id="btnClock" onclick="window.toggleClock()" class="w-full text-[9px] py-2.5 rounded font-black uppercase transition">Loading...</button>
-                            <button onclick="window.logout()" class="w-full bg-gray-900/40 border border-gray-700 text-[9px] py-2 rounded font-black uppercase hover:bg-white hover:text-black transition text-gray-500 mt-2">Logout</button>
+                            <button onclick="window.logout()" class="w-full bg-gray-900/40 border border-gray-700 text-[9px] py-2 rounded font-black uppercase hover:bg-white hover:text-black transition text-gray-500">Logout Account</button>
                         </div>
                     </div>
                 </div>
+
                 <div id="gradeCounter" class="space-y-2 font-bold text-[10px] uppercase tracking-wider"></div>
+
                 <div class="border-rays p-5 bg-black/40">
                     <p class="text-[10px] font-bold uppercase mb-4 tracking-widest text-gray-500 border-b border-gray-800 pb-2">Duty List</p>
                     <ul id="dutyList" class="space-y-3 text-[11px] font-medium"></ul>
@@ -259,10 +85,10 @@
                     <h3 class="text-lg font-black mb-4 uppercase tracking-tighter text-gray-300">New Report</h3>
                     <div class="border-rays p-6 bg-black/40 space-y-5">
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <input type="number" id="in-service" placeholder="Service ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
-                            <input type="number" id="in-mod" placeholder="Mod ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
-                            <input type="number" id="in-engine" placeholder="Engine ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
-                            <input type="number" id="in-total" placeholder="Service Price ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
+                            <input type="number" id="in-service" placeholder="Service ..." class="bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition text-white italic">
+                            <input type="number" id="in-mod" placeholder="Mod ..." class="bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition text-white italic">
+                            <input type="number" id="in-engine" placeholder="Engine ..." class="bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition text-white italic">
+                            <input type="number" id="in-total" placeholder="Service Price ..." class="bg-black/40 border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition text-white italic">
                         </div>
                         <div class="flex flex-col md:flex-row gap-4">
                             <div id="drop-zone" tabindex="0" class="flex-1 border border-dashed border-gray-700 rounded-lg flex items-center justify-center text-[10px] text-gray-500 py-3 hover:border-red-600 transition cursor-pointer">
@@ -270,7 +96,7 @@
                                     <i class="fas fa-camera"></i> <span>CTRL + V to Paste Proof</span>
                                 </div>
                             </div>
-                            <button onclick="window.submitReport()" class="bg-red-700 hover:bg-red-600 px-10 py-3 rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition active:scale-95">Submit Report</button>
+                            <button onclick="window.submitReport()" class="bg-red-700 hover:bg-red-600 px-10 py-3 rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition active:scale-95 text-white">Submit Report</button>
                         </div>
                     </div>
                 </section>
@@ -299,7 +125,148 @@
         <img id="fullImage" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl border border-gray-700 object-contain">
     </div>
 
-    <script>
+    <script type="module">
+        import firebaseConfig from "./config.js";
+        import { Storage } from "./data/storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Ambil session dari Storage helper
+        const session = Storage.getSession();
+        if (!session.userKey || !session.email) {
+            window.location.href = 'login.html';
+        }
+
+        // ==========================================
+        // PENANDA: ATUR GAJI DI SINI
+        // ==========================================
+        const SALARY_CONFIG = {
+            "Manager":    { base: 15000, otRate: 1500 },
+            "Supervisor": { base: 13000, otRate: 1250 },
+            "Senior":     { base: 10000, otRate: 1000 },
+            "Junior":     { base: 7500,  otRate: 750  },
+            "Recruit":    { base: 5000,  otRate: 500  }
+        };
+        const BASIC_DUTY_HOURS = 15; // Minimal jam untuk dapat gaji pokok
+        // ==========================================
+
+        onValue(ref(db, `users/${session.userKey}`), (snapshot) => {
+            const user = snapshot.val();
+            if (!user) return;
+            get(ref(db, 'users')).then((allUsersSnapshot) => {
+                const allUsers = allUsersSnapshot.val() || {};
+                updateUI(user, allUsers);
+            });
+        });
+
+        function updateUI(user, allUsers) {
+            const salaryData = calculateSalaries(user);
+            document.getElementById('userName').innerText = user.name;
+            document.getElementById('userGrade').innerText = user.grade;
+            document.getElementById('mainName').innerText = user.name;
+            document.getElementById('mainGrade').innerText = user.grade;
+            
+            // Gunakan Storage Helper untuk format
+            document.getElementById('totalSalary').innerText = Storage.formatMoney(salaryData.total);
+            document.getElementById('baseSalaryDisplay').innerText = Storage.formatMoney(salaryData.baseSalary);
+            document.getElementById('bonusDisplay').innerText = Storage.formatMoney(salaryData.bonusOT);
+            
+            document.getElementById('dutyHours').innerText = `${(user.totalHours || 0).toFixed(1)} H / ${BASIC_DUTY_HOURS} H`;
+            document.getElementById('overtime').innerText = `${salaryData.overtimeHours} H`;
+
+            const btn = document.getElementById('btnClock');
+            btn.innerText = user.onDuty ? "Clock-Out" : "Clock-In";
+            btn.className = user.onDuty ? 
+                "w-full bg-green-900/40 border border-green-600/50 text-green-500 text-[9px] py-2.5 rounded font-black uppercase" : 
+                "w-full bg-red-900/40 border border-red-600/50 text-red-500 text-[9px] py-2.5 rounded font-black uppercase hover:bg-red-600 hover:text-white transition";
+
+            if (user.role === 'admin' && !document.getElementById('admin-link')) {
+                const nav = document.getElementById('nav-links');
+                nav.insertAdjacentHTML('afterbegin', `<a id="admin-link" href="admin.html" class="text-gray-400 hover:text-white transition uppercase">Admin Panel</a>`);
+            }
+
+            renderCounters(allUsers);
+            renderDutyList(allUsers);
+            renderTable(user.reports || []);
+            startLiveTimer(user);
+        }
+
+        function calculateSalaries(user) {
+            const config = SALARY_CONFIG[user.grade] || SALARY_CONFIG["Recruit"];
+            const totalHours = user.totalHours || 0;
+            let baseSalary = 0, overtimeHours = 0, bonusOT = 0;
+            if (totalHours >= BASIC_DUTY_HOURS) {
+                baseSalary = config.base;
+                overtimeHours = totalHours - BASIC_DUTY_HOURS;
+                bonusOT = overtimeHours * config.otRate;
+            }
+            const total = baseSalary + bonusOT;
+            
+            // Update gaji ke database agar Admin bisa melihat angka yang sama
+            update(ref(db, `users/${session.userKey}`), { 
+                weeklySalary: total,
+                totalOvertime: overtimeHours
+            });
+
+            return { baseSalary, overtimeHours: overtimeHours.toFixed(1), bonusOT, total };
+        }
+
+        let timerInterval = null;
+        function startLiveTimer(user) {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                let displayHours = user.totalHours || 0;
+                if (user.onDuty && user.startTime) {
+                    const now = Date.now();
+                    const sessionMs = now - user.startTime;
+                    displayHours += (sessionMs / 3600000);
+                    document.getElementById('liveTimer').classList.add('text-red-500', 'timer-glow');
+                } else {
+                    document.getElementById('liveTimer').classList.remove('text-red-500', 'timer-glow');
+                }
+                document.getElementById('liveTimer').innerText = Storage.formatDuration(displayHours);
+            }, 1000);
+        }
+
+        window.toggleClock = async () => {
+            const snapshot = await get(ref(db, `users/${session.userKey}`));
+            const user = snapshot.val();
+            const now = Date.now();
+            if (!user.onDuty) {
+                await update(ref(db, `users/${session.userKey}`), { onDuty: true, startTime: now });
+            } else {
+                const sessionMs = now - user.startTime;
+                const newTotal = (user.totalHours || 0) + (sessionMs / 3600000);
+                await update(ref(db, `users/${session.userKey}`), { onDuty: false, totalHours: newTotal, startTime: null });
+            }
+        };
+
+        window.submitReport = async () => {
+            const svc = document.getElementById('in-service').value;
+            const total = document.getElementById('in-total').value;
+            const mod = document.getElementById('in-mod').value || 0;
+            const engine = document.getElementById('in-engine').value || 0;
+            if (!svc || !total || !window.tempImg) return alert("Lengkapi data dan bukti foto!");
+            const snapshot = await get(ref(db, `users/${session.userKey}/reports`));
+            const reports = snapshot.val() || [];
+            reports.push({
+                date: new Date().toLocaleDateString('id-ID'),
+                service: svc, mod: mod, engine: engine,
+                total: parseInt(total), image: window.tempImg
+            });
+            await update(ref(db, `users/${session.userKey}`), { reports: reports });
+            alert("Report Berhasil Dikirim!");
+            location.reload();
+        };
+
+        window.logout = () => {
+            Storage.clearSession();
+        };
+
+        // UI Logic
         window.tempImg = null;
         document.getElementById('drop-zone').addEventListener('paste', (e) => {
             const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf("image") !== -1);
@@ -307,11 +274,50 @@
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     window.tempImg = event.target.result;
-                    document.getElementById('preview-container').innerHTML = `<img src="${window.tempImg}" class="img-preview-style"> <span class="text-green-500 font-black uppercase">✓ Ready</span>`;
+                    document.getElementById('preview-container').innerHTML = `<img src="${window.tempImg}" style="max-height:35px; border-radius:4px; border:1px solid #dc2626;"> <span class="text-green-500 font-black uppercase">✓ Ready</span>`;
                 };
                 reader.readAsDataURL(item.getAsFile());
             }
         });
+
+        function renderCounters(allUsers) {
+            const grades = ["Manager", "Supervisor", "Senior", "Junior", "Recruit"];
+            const counts = { Manager: 0, Supervisor: 0, Senior: 0, Junior: 0, Recruit: 0 };
+            Object.values(allUsers).forEach(u => { if(counts[u.grade] !== undefined) counts[u.grade]++; });
+            document.getElementById('gradeCounter').innerHTML = grades.map(grade => `
+                <div class="border-rays px-5 py-3 flex justify-between items-center bg-black/20">
+                    <span class="text-gray-400 text-[10px]">${grade}</span><span class="text-red-600 text-lg font-black italic">${counts[grade]}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderDutyList(allUsers) {
+            const onDutyUsers = Object.values(allUsers).filter(u => u.onDuty);
+            const list = document.getElementById('dutyList');
+            list.innerHTML = onDutyUsers.length === 0 ? `<li class="text-gray-700 italic text-center py-2 uppercase text-[9px]">No one on duty</li>` : 
+                onDutyUsers.map(u => `<li class="flex justify-between items-center bg-red-950/10 p-2 rounded text-[11px]"><span>${u.name}</span><span class="text-[8px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black uppercase">${u.grade}</span></li>`).join('');
+        }
+
+        function renderTable(reports) {
+            const tbody = document.getElementById('reportTable');
+            if (reports.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-12 uppercase tracking-widest text-[9px] text-gray-500">Empty history</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = reports.slice().reverse().map(r => `
+                <tr class="h-12 hover:bg-white/5 transition">
+                    <td class="border-r border-gray-800/30">${r.date}</td>
+                    <td class="border-r border-gray-800/30">${r.service}</td>
+                    <td class="border-r border-gray-800/30">${r.mod}</td>
+                    <td class="border-r border-gray-800/30">${r.engine}</td>
+                    <td class="border-r border-gray-800/30 font-black text-white">${Storage.formatMoney(r.total)}</td>
+                    <td class="px-2">
+                        ${r.image ? `<button onclick="window.openPreview('${r.image}')" class="text-red-500 hover:text-white transition uppercase font-bold text-[8px]"><i class="fas fa-camera"></i> View</button>` : `<span class="text-gray-700 italic">No Proof</span>`}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
         window.openPreview = (imgData) => { 
             const modal = document.getElementById('imageModal'); 
             document.getElementById('fullImage').src = imgData; 
