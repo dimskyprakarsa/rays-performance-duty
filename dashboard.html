@@ -15,125 +15,8 @@
         .img-preview-style { max-height: 35px; border-radius: 4px; border: 1px solid #dc2626; }
         .timer-glow { text-shadow: 0 0 10px rgba(220, 38, 38, 0.5); }
     </style>
-</head>
-<body class="p-6">
-
-    <div class="max-w-6xl mx-auto">
-        <header class="flex justify-between items-center mb-10 border-b border-gray-700 pb-5">
-            <img src="assets/logo.png" alt="RAYS PERFORMANCE" class="w-32 h-12 object-contain">
-            <nav id="nav-links" class="flex gap-8 font-bold text-[11px] uppercase tracking-[0.2em] items-center">
-                <a href="dashboard.html" class="text-white border-b-2 border-red-600 pb-1">Dashboard</a>
-            </nav>
-        </header>
-
-        <div class="grid grid-cols-12 gap-8">
-            <aside class="col-span-12 lg:col-span-3 space-y-5">
-                <div class="border-rays p-5 bg-black/40 shadow-lg">
-                    <p class="text-[10px] font-bold uppercase mb-4 tracking-widest text-gray-500">Employee Status</p>
-                    <div class="flex flex-col gap-4">
-                        <div class="flex items-center gap-3 border-b border-gray-800 pb-4">
-                            <div class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center border border-gray-700">
-                                <i class="fas fa-user text-gray-400 text-xs"></i>
-                            </div>
-                            <div>
-                                <p id="userName" class="text-xs font-bold uppercase tracking-tight text-white">---</p>
-                                <p id="userGrade" class="text-[9px] text-red-600 font-bold uppercase tracking-widest">GRADE</p>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-3 text-center">
-                            <div id="liveTimerCont" class="py-2 bg-black/20 rounded-lg border border-gray-800/50">
-                                <p class="text-[8px] text-gray-500 uppercase font-bold tracking-[0.2em] mb-1">Current Duty Duration</p>
-                                <p id="liveTimer" class="text-lg font-black text-white italic tracking-tighter">00:00:00</p>
-                            </div>
-                            <button id="btnClock" onclick="window.toggleClock()" class="w-full text-[9px] py-2.5 rounded font-black uppercase transition">Loading...</button>
-                            <button onclick="window.logout()" class="w-full bg-gray-900/40 border border-gray-700 text-[9px] py-2 rounded font-black uppercase hover:bg-white hover:text-black transition text-gray-500 mt-2">Logout</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="gradeCounter" class="space-y-2 font-bold text-[10px] uppercase tracking-wider"></div>
-
-                <div class="border-rays p-5 bg-black/40">
-                    <p class="text-[10px] font-bold uppercase mb-4 tracking-widest text-gray-500 border-b border-gray-800 pb-2">Duty List</p>
-                    <ul id="dutyList" class="space-y-3 text-[11px] font-medium"></ul>
-                </div>
-            </aside>
-
-            <main class="col-span-12 lg:col-span-9 space-y-8">
-                <section>
-                    <h3 class="text-lg font-black mb-4 uppercase tracking-tighter">Weekly Salary</h3>
-                    <div class="border-rays p-8 bg-black/40 shadow-2xl relative">
-                        <div class="flex justify-between items-center mb-8">
-                            <div class="flex items-center gap-5">
-                                <div class="w-14 h-14 bg-gray-800 rounded-full flex items-center justify-center border border-gray-700">
-                                    <i class="fas fa-user text-2xl text-gray-500"></i>
-                                </div>
-                                <div>
-                                    <p id="mainName" class="text-2xl font-black uppercase tracking-tight text-white">---</p>
-                                    <p id="mainGrade" class="text-xs text-red-600 font-bold uppercase tracking-[0.3em] mt-1">---</p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-[9px] font-bold uppercase text-gray-500 tracking-[0.2em]">Weekly Total Salary</p>
-                                <p id="totalSalary" class="text-4xl font-black text-white tracking-tighter italic">$ 0</p>
-                            </div>
-                        </div>
-                        <div class="border-t border-dashed border-gray-800 pt-6 grid grid-cols-4 gap-4 text-center">
-                            <div><p class="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Duty Hours</p><p id="dutyHours" class="text-lg font-black mt-1">0.0 H</p></div>
-                            <div><p class="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Overtime</p><p id="overtime" class="text-lg font-black text-red-600 mt-1">0.0 H</p></div>
-                            <div><p class="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Base Salary</p><p id="baseSalaryDisplay" class="text-lg font-black mt-1">$ 0</p></div>
-                            <div><p class="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Bonus OT</p><p id="bonusDisplay" class="text-lg font-black mt-1">$ 0</p></div>
-                        </div>
-                    </div>
-                </section>
-
-                <section>
-                    <h3 class="text-lg font-black mb-4 uppercase tracking-tighter text-gray-300">New Report</h3>
-                    <div class="border-rays p-6 bg-black/40 space-y-5">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <input type="number" id="in-service" placeholder="Service ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
-                            <input type="number" id="in-mod" placeholder="Mod ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
-                            <input type="number" id="in-engine" placeholder="Engine ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
-                            <input type="number" id="in-total" placeholder="Service Price ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
-                        </div>
-                        <div class="flex flex-col md:flex-row gap-4">
-                            <div id="drop-zone" tabindex="0" class="flex-1 border border-dashed border-gray-700 rounded-lg flex items-center justify-center text-[10px] text-gray-500 py-3 hover:border-red-600 transition cursor-pointer">
-                                <div id="preview-container" class="flex items-center gap-3 italic">
-                                    <i class="fas fa-camera"></i> <span>CTRL + V to Paste Proof</span>
-                                </div>
-                            </div>
-                            <button onclick="window.submitReport()" class="bg-red-700 hover:bg-red-600 px-10 py-3 rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition active:scale-95">Submit Report</button>
-                        </div>
-                    </div>
-                </section>
-
-                <div class="border-rays overflow-hidden bg-black/20 shadow-xl">
-                    <table class="w-full text-[10px] text-center">
-                        <thead class="bg-red-950/80 text-white font-black uppercase tracking-widest border-b border-gray-800">
-                            <tr>
-                                <th class="py-4 border-r border-gray-800/50">Date</th>
-                                <th class="py-4 border-r border-gray-800/50">Service</th>
-                                <th class="py-4 border-r border-gray-800/50">Mod</th>
-                                <th class="py-4 border-r border-gray-800/50">Engine</th>
-                                <th class="py-4 border-r border-gray-800/50">Total</th>
-                                <th class="py-4">Proof</th>
-                            </tr>
-                        </thead>
-                        <tbody id="reportTable" class="divide-y divide-gray-800"></tbody>
-                    </table>
-                </div>
-            </main>
-        </div>
-    </div>
-
-    <div id="imageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
-        <button onclick="window.closePreview()" class="absolute top-8 right-8 text-white text-3xl hover:text-red-500 transition"><i class="fas fa-times"></i></button>
-        <img id="fullImage" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl border border-gray-700 object-contain">
-    </div>
 
     <script type="module">
-        // Import dari config.js di root folder sesuai gambar VS Code terbaru
         import firebaseConfig from "./config.js";
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -303,9 +186,120 @@
             `).join('');
         }
     </script>
+</head>
+<body class="p-6">
+    <div class="max-w-6xl mx-auto">
+        <header class="flex justify-between items-center mb-10 border-b border-gray-700 pb-5">
+            <img src="assets/logo.png" alt="RAYS PERFORMANCE" class="w-32 h-12 object-contain">
+            <nav id="nav-links" class="flex gap-8 font-bold text-[11px] uppercase tracking-[0.2em] items-center">
+                <a href="dashboard.html" class="text-white border-b-2 border-red-600 pb-1">Dashboard</a>
+            </nav>
+        </header>
+
+        <div class="grid grid-cols-12 gap-8">
+            <aside class="col-span-12 lg:col-span-3 space-y-5">
+                <div class="border-rays p-5 bg-black/40 shadow-lg">
+                    <p class="text-[10px] font-bold uppercase mb-4 tracking-widest text-gray-500">Employee Status</p>
+                    <div class="flex flex-col gap-4">
+                        <div class="flex items-center gap-3 border-b border-gray-800 pb-4">
+                            <div class="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center border border-gray-700">
+                                <i class="fas fa-user text-gray-400 text-xs"></i>
+                            </div>
+                            <div>
+                                <p id="userName" class="text-xs font-bold uppercase tracking-tight text-white">---</p>
+                                <p id="userGrade" class="text-[9px] text-red-600 font-bold uppercase tracking-widest">GRADE</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3 text-center">
+                            <div id="liveTimerCont" class="py-2 bg-black/20 rounded-lg border border-gray-800/50">
+                                <p class="text-[8px] text-gray-500 uppercase font-bold tracking-[0.2em] mb-1">Current Duty Duration</p>
+                                <p id="liveTimer" class="text-lg font-black text-white italic tracking-tighter">00:00:00</p>
+                            </div>
+                            <button id="btnClock" onclick="window.toggleClock()" class="w-full text-[9px] py-2.5 rounded font-black uppercase transition">Loading...</button>
+                            <button onclick="window.logout()" class="w-full bg-gray-900/40 border border-gray-700 text-[9px] py-2 rounded font-black uppercase hover:bg-white hover:text-black transition text-gray-500 mt-2">Logout</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="gradeCounter" class="space-y-2 font-bold text-[10px] uppercase tracking-wider"></div>
+                <div class="border-rays p-5 bg-black/40">
+                    <p class="text-[10px] font-bold uppercase mb-4 tracking-widest text-gray-500 border-b border-gray-800 pb-2">Duty List</p>
+                    <ul id="dutyList" class="space-y-3 text-[11px] font-medium"></ul>
+                </div>
+            </aside>
+
+            <main class="col-span-12 lg:col-span-9 space-y-8">
+                <section>
+                    <h3 class="text-lg font-black mb-4 uppercase tracking-tighter">Weekly Salary</h3>
+                    <div class="border-rays p-8 bg-black/40 shadow-2xl relative">
+                        <div class="flex justify-between items-center mb-8">
+                            <div class="flex items-center gap-5">
+                                <div class="w-14 h-14 bg-gray-800 rounded-full flex items-center justify-center border border-gray-700">
+                                    <i class="fas fa-user text-2xl text-gray-500"></i>
+                                </div>
+                                <div>
+                                    <p id="mainName" class="text-2xl font-black uppercase tracking-tight text-white">---</p>
+                                    <p id="mainGrade" class="text-xs text-red-600 font-bold uppercase tracking-[0.3em] mt-1">---</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[9px] font-bold uppercase text-gray-500 tracking-[0.2em]">Weekly Total Salary</p>
+                                <p id="totalSalary" class="text-4xl font-black text-white tracking-tighter italic">$ 0</p>
+                            </div>
+                        </div>
+                        <div class="border-t border-dashed border-gray-800 pt-6 grid grid-cols-4 gap-4 text-center">
+                            <div><p class="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Duty Hours</p><p id="dutyHours" class="text-lg font-black mt-1">0.0 H</p></div>
+                            <div><p class="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Overtime</p><p id="overtime" class="text-lg font-black text-red-600 mt-1">0.0 H</p></div>
+                            <div><p class="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Base Salary</p><p id="baseSalaryDisplay" class="text-lg font-black mt-1">$ 0</p></div>
+                            <div><p class="text-[9px] uppercase text-gray-500 font-bold tracking-widest">Bonus OT</p><p id="bonusDisplay" class="text-lg font-black mt-1">$ 0</p></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h3 class="text-lg font-black mb-4 uppercase tracking-tighter text-gray-300">New Report</h3>
+                    <div class="border-rays p-6 bg-black/40 space-y-5">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <input type="number" id="in-service" placeholder="Service ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
+                            <input type="number" id="in-mod" placeholder="Mod ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
+                            <input type="number" id="in-engine" placeholder="Engine ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
+                            <input type="number" id="in-total" placeholder="Service Price ..." class="border border-gray-700 rounded-lg px-4 py-3 text-xs outline-none focus:border-red-600 transition">
+                        </div>
+                        <div class="flex flex-col md:flex-row gap-4">
+                            <div id="drop-zone" tabindex="0" class="flex-1 border border-dashed border-gray-700 rounded-lg flex items-center justify-center text-[10px] text-gray-500 py-3 hover:border-red-600 transition cursor-pointer">
+                                <div id="preview-container" class="flex items-center gap-3 italic">
+                                    <i class="fas fa-camera"></i> <span>CTRL + V to Paste Proof</span>
+                                </div>
+                            </div>
+                            <button onclick="window.submitReport()" class="bg-red-700 hover:bg-red-600 px-10 py-3 rounded-lg font-black text-[11px] uppercase tracking-[0.2em] transition active:scale-95">Submit Report</button>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="border-rays overflow-hidden bg-black/20 shadow-xl">
+                    <table class="w-full text-[10px] text-center">
+                        <thead class="bg-red-950/80 text-white font-black uppercase tracking-widest border-b border-gray-800">
+                            <tr>
+                                <th class="py-4 border-r border-gray-800/50">Date</th>
+                                <th class="py-4 border-r border-gray-800/50">Service</th>
+                                <th class="py-4 border-r border-gray-800/50">Mod</th>
+                                <th class="py-4 border-r border-gray-800/50">Engine</th>
+                                <th class="py-4 border-r border-gray-800/50">Total</th>
+                                <th class="py-4">Proof</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTable" class="divide-y divide-gray-800"></tbody>
+                    </table>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="imageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4">
+        <button onclick="window.closePreview()" class="absolute top-8 right-8 text-white text-3xl hover:text-red-500 transition"><i class="fas fa-times"></i></button>
+        <img id="fullImage" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl border border-gray-700 object-contain">
+    </div>
 
     <script>
-        // Logika Paste Gambar
         window.tempImg = null;
         document.getElementById('drop-zone').addEventListener('paste', (e) => {
             const item = Array.from(e.clipboardData.items).find(x => x.type.indexOf("image") !== -1);
@@ -318,7 +312,6 @@
                 reader.readAsDataURL(item.getAsFile());
             }
         });
-
         window.openPreview = (imgData) => { 
             const modal = document.getElementById('imageModal'); 
             document.getElementById('fullImage').src = imgData; 
