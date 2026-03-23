@@ -111,7 +111,7 @@
 
         // Security Check menggunakan Storage Helper
         const session = Storage.getSession();
-        if (!session.email) window.location.href = 'index.html';
+        if (!session.email) window.location.href = 'login.html';
 
         // Fungsi Global untuk Update Grade
         window.updateGrade = function(userId, newGrade) {
